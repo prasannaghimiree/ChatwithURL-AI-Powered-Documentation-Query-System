@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Processor & QA</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            width: 800px;
+            max-width: 90%;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 8px;
+            color: #444;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin: 5px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: #287363;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            background-color: #287363;
+            color: white;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #18c49f;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .response {
+            margin-top: 25px;
+            padding: 20px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #333;
+        }
+        #question-section {
+            margin-top: 25px;
+        }
+        button#url-button {
+            background-color: #287363;
+        }
+        button#question-button {
+            background-color: #2c8578;
+        }
+        button[onclick="resetToURLInput"] {
+            background-color: #666;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>URL Processor & QA</h1>
+        <div id="url-section">
+            <div class="form-group">
+                <label for="url-input">Enter URL:</label>
+                <input type="text" id="url-input" placeholder="https://example.com">
+            </div>
+            <button id="url-button" onclick="processURL()">Process URL</button>
+        </div>
+
+        <div id="question-section" style="display: none;">
+            <div class="form-group">
+                <label for="question-input">Ask a Question:</label>
+                <input type="text" id="question-input" placeholder="What would you like to know about this content?">
+            </div>
+            <button id="question-button" onclick="askQuestion()">Ask Question</button>
+            <button onclick="resetToURLInput()">Process New URL</button>
+        </div>
+
+        <div id="response-section" class="response" style="display: none;"></div>
+    </div>
+
+    <script>
+        let sessionId = null;
+
+        async function processURL() {
+            const urlButton = document.getElementById("url-button");
+            const url = document.getElementById("url-input").value;
+
+            if (!url) {
+                alert("Please enter a valid URL.");
+                return;
+            }
+
+            urlButton.textContent = "Processing...";
+            urlButton.disabled = true;
+
+            try {
+                const response = await fetch("http://127.0.0.8:8000/set_url/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    sessionId = data.session_id;
+                    document.getElementById("url-section").style.display = "none";
+                    document.getElementById("question-section").style.display = "block";
+                    alert(data.message);
+                } else {
+                    alert(data.detail);
+                }
+            } catch (error) {
+                console.error("Error processing URL:", error);
+                alert("An error occurred. Please try again.");
+            } finally {
+                urlButton.textContent = "Process URL";
+                urlButton.disabled = false;
+            }
+        }
+
+        async function askQuestion() {
+            const questionButton = document.getElementById("question-button");
+            const question = document.getElementById("question-input").value;
+
+            if (!question) {
+                alert("Please enter a question.");
+                return;
+            }
+
+            if (!sessionId) {
+                alert("Session ID is missing. Please process a URL first.");
+                return;
+            }
+
+            questionButton.textContent = "Processing...";
+            questionButton.disabled = true;
+
+            try {
+                const response = await fetch("http://127.0.0.8:8000/ask_question/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ session_id: sessionId, question: question })
+                });
+
+                const data = await response.json();
+                const responseSection = document.getElementById("response-section");
+
+                if (response.ok) {
+                    // Remove "Answer: " prefix from the response
+                    const answer = data.answer.replace(/^Answer:\s*/i, '');
+                    responseSection.textContent = answer;
+                    responseSection.style.display = "block";
+                } else {
+                    responseSection.textContent = data.detail;
+                    responseSection.style.display = "block";
+                }
+            } catch (error) {
+                console.error("Error asking question:", error);
+                alert("An error occurred. Please try again.");
+            } finally {
+                questionButton.textContent = "Ask Question";
+                questionButton.disabled = false;
+            }
+        }
+
+        function resetToURLInput() {
+            sessionId = null;
+            document.getElementById("url-section").style.display = "block";
+            document.getElementById("question-section").style.display = "none";
+            document.getElementById("response-section").style.display = "none";
+            document.getElementById("url-input").value = "";
+            document.getElementById("question-input").value = "";
+        }
+    </script>
+</body>
+</html>

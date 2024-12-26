@@ -8,6 +8,8 @@ from langchain_chroma import Chroma
 from fastapi import HTTPException
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_ollama import OllamaLLM
+
 
 
 # Base directory for temporary vectorstores
@@ -86,13 +88,17 @@ def fetch_and_process_url(url: str, session_id: str):
     return vectorstore.as_retriever()
 
 
-model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+# model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
 
 from langchain_aws import ChatBedrock
 
-llm= ChatBedrock(
-        model_id=model_id,
-        model_kwargs=dict(temperature=0),
+# llm= ChatBedrock(
+#         model_id=model_id,
+#         model_kwargs=dict(temperature=0),
+#     )
+
+llm = OllamaLLM(
+        model="mistral", config={"max_new_tokens": 1000, "temperature": 0.9}
     )
 
 def initialize_qa_chain(retriever):
@@ -121,3 +127,4 @@ def cleanup_old_sessions(max_age_hours=1):
                 logging.info(f"Cleaned up old session: {session_dir}")
     except Exception as e:
         logging.error(f"Error during cleanup: {e}")
+
