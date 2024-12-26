@@ -23,7 +23,7 @@ An intelligent documentation retrieval system that uses LLMs (Large Language Mod
 
 1. Clone the repository:
 ```bash
-git clone git@github.com:rubeyyyy/ChatwithURL.git
+
 cd ChatwithURL
 ```
 
@@ -54,12 +54,12 @@ pip install -r requirements.txt
 
 1. Set up your Ollama server URL or add you LLM in in `utils.py`:
 ```python
-base_url = 'https://your-ollama-server.com'  # Replace with your Ollama server URL
+base_url = 'https://your-ollama-server.com'  
 ```
 
 2. Configure the vector store directory in `utils.py`:
 ```python
-VECTORSTORE_DIR = "path/to/vectorstore"  # Replace with your preferred directory
+VECTORSTORE_DIR = "path/to/vectorstore"  
 ```
 
 ## Usage
